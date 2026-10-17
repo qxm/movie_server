@@ -1,0 +1,26 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: graphql-gateway
+
+  graphql:
+    graphiql:
+      enabled: true
+    path: /graphql
+
+grpc:
+  movie:
+    host: localhost
+    port: 9091
+
+  people:
+    host: localhost
+    port: 9092
+
+logging:
+  level:
+    org.springframework.graphql: DEBUG
+    org.springframework.graphql.execution: DEBUG
+    com.example.movieapp: DEBUG

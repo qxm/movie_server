@@ -1,0 +1,34 @@
+app:
+  artwork:
+    upload-dir: ./uploads/artworks
+
+spring:
+  application:
+    name: movie-service
+
+  datasource:
+    url: jdbc:h2:file:./data/moviedb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+server:
+  port: 8081
+
+grpc:
+  server:
+    port: 9091
+
+  people:
+    host: localhost
+    port: 9092

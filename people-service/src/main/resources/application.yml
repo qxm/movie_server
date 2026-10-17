@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: people-service
+
+  datasource:
+    url: jdbc:h2:file:./data/peopledb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  main:
+    web-application-type: none
+
+grpc:
+  server:
+    port: 9092

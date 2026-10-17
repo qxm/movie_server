@@ -1,0 +1,72 @@
+type Movie {
+    id: ID!
+    title: String!
+    releaseYear: Int!
+    synopsis: String!
+    artworkUrl: String!
+    credits: [MovieCredit!]!
+}
+
+type MovieCredit {
+    personId: ID!
+    person: Person
+    role: String!
+    characterName: String
+}
+
+input MovieCreditInput {
+    personId: ID!
+    role: String!
+    characterName: String = ""
+}
+
+type Person {
+    id: ID!
+    name: String!
+    biography: String!
+}
+
+
+input CreateMovieInput {
+    title: String!
+    releaseYear: Int = 0
+    synopsis: String = ""
+    artworkUrl: String = ""
+    credits: [MovieCreditInput!] = []
+}
+
+input UpdateMovieInput {
+    title: String
+    releaseYear: Int
+    synopsis: String
+    artworkUrl: String
+    credits: [MovieCreditInput!]
+}
+
+input CreatePersonInput {
+    name: String!
+    biography: String = ""
+}
+
+input UpdatePersonInput {
+     name: String!
+     biography: String
+ }
+
+type Query {
+    movies: [Movie!]!
+    movie(id: ID!): Movie
+
+    people: [Person!]!
+    person(id: ID!): Person
+    searchPeople(keyword: String!): [Person!]!
+}
+
+type Mutation {
+    createMovie(input: CreateMovieInput!): Movie!
+    createPerson(input: CreatePersonInput!): Person!
+    deleteMovie(id: ID!): Boolean!
+    updateMovie(id: ID!, input: UpdateMovieInput!): Movie!
+    updatePerson(id: ID!, input: UpdatePersonInput!): Person!
+    deletePerson(id: ID!): Boolean!
+}

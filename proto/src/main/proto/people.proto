@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package people;
+
+option java_multiple_files = true;
+option java_package = "com.example.movieapp.proto.people";
+
+service PeopleService {
+
+  rpc GetPerson(GetPersonRequest)
+      returns (PersonResponse);
+
+  rpc CreatePerson(CreatePersonRequest)
+      returns (PersonResponse);
+
+  rpc ListPeople(ListPeopleRequest)
+      returns (ListPeopleResponse);
+
+  rpc UpdatePerson(UpdatePersonRequest) returns (PersonResponse);
+  rpc DeletePerson(DeletePersonRequest) returns (DeletePersonResponse);
+  rpc SearchPeople(SearchPeopleRequest) returns (SearchPeopleResponse);
+}
+
+message GetPersonRequest {
+  string id = 1;
+}
+
+message CreatePersonRequest {
+  string name = 1;
+  string biography = 2;
+}
+
+message PersonResponse {
+  string id = 1;
+  string name = 2;
+  string biography = 3;
+}
+
+message ListPeopleRequest {
+}
+
+message ListPeopleResponse {
+  repeated PersonResponse people = 1;
+}
+
+message UpdatePersonRequest {
+  string id = 1;
+  string name = 2;
+  string biography = 3;
+}
+
+message DeletePersonRequest {
+  string id = 1;
+}
+
+message DeletePersonResponse {
+  bool success = 1;
+}
+
+message SearchPeopleRequest {
+  string keyword = 1;
+}
+
+message SearchPeopleResponse {
+  repeated PersonResponse people = 1;
+}

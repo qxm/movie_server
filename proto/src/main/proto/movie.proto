@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package movie;
+
+option java_multiple_files = true;
+option java_package = "com.example.movieapp.proto.movie";
+
+service MovieService {
+  rpc GetMovie(GetMovieRequest) returns (MovieResponse);
+  rpc ListMovies(ListMoviesRequest) returns (ListMoviesResponse);
+  rpc CreateMovie(CreateMovieRequest) returns (MovieResponse);
+  rpc DeleteMovie(DeleteMovieRequest) returns (DeleteMovieResponse);
+  rpc UpdateMovie(UpdateMovieRequest) returns (MovieResponse);
+}
+
+message GetMovieRequest {
+  string id = 1;
+}
+
+message ListMoviesRequest {}
+
+message MovieCredit {
+  string person_id = 1;
+  string role = 2;
+  string character_name = 3;
+}
+
+message CreateMovieRequest {
+  string title = 1;
+  int32 release_year = 2;
+  string synopsis = 3;
+  string artwork_url = 4;
+
+  repeated MovieCredit credits = 5;
+}
+
+message MovieResponse {
+  string id = 1;
+  string title = 2;
+  int32 release_year = 3;
+  string synopsis = 4;
+  string artwork_url = 5;
+
+  repeated MovieCredit credits = 6;
+}
+
+message ListMoviesResponse {
+  repeated MovieResponse movies = 1;
+}
+
+message DeleteMovieRequest {
+  string id = 1;
+}
+
+message DeleteMovieResponse {
+  bool success = 1;
+}
+
+message UpdateMovieRequest {
+  string id = 1;
+  string title = 2;
+  int32 release_year = 3;
+  string synopsis = 4;
+  string artwork_url = 5;
+  repeated MovieCredit credits = 6;
+}
