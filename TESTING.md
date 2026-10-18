@@ -26,7 +26,7 @@ If the Kotlin daemon cannot write to its default cache, run with `-Pkotlin.compi
 - `PersonServiceTest`: trimmed names and biographies, null/empty biography, name limits, missing records, updates, deletes, sorted lists, blank searches, and the twenty-result search limit.
 - `MovieGrpcServiceTest`: request/response conversion including credits, malformed UUIDs, validation errors, missing movies, preservation of gRPC failures, unexpected errors, and response completion semantics.
 - `PeopleGrpcServiceTest`: nullable biography conversion, create/get/list/update/delete/search requests, invalid UUIDs, validation failures, missing people, and internal service errors.
-- `ArtworkControllerTest`: valid PNG/JPEG content, generated filenames, header/extension mismatch, empty/oversized/exact-limit/truncated images, unsupported formats, missing files, invalid filenames, and response headers/bytes.
+- `ArtworkControllerTest`: valid PNG/JPEG and lossy/lossless WebP content, WebP MIME type and truncated/fake WebP rejection, generated filenames, header/extension mismatch, empty/oversized/exact-limit/truncated images, unsupported formats, missing files, invalid filenames, and response headers/bytes.
 - `MovieGraphQLControllerTest`: delegation of queries/mutations, input forwarding, NOT_FOUND-to-null handling, service outages, and nullable credit-person resolution.
 
 HTML reports are generated under `<module>/build/reports/tests/unitTest/index.html`. Machine-readable JUnit XML is under `<module>/build/test-results/unitTest/`.

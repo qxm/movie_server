@@ -54,8 +54,8 @@ class ArtworkController(
         val ext = when (format) {
             "jpeg", "jpg" -> "jpg"
             "png" -> "png"
-            "webp"-> "webp"
-            else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Only JPEG and PNG supported")
+            "webp" -> "webp"
+            else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Only JPEG, PNG and WebP supported")
         }
         val filename = "${UUID.randomUUID()}.$ext"
         val target = storage.resolve(filename)
@@ -72,7 +72,11 @@ class ArtworkController(
         if (!path.startsWith(storage) || !Files.isRegularFile(path)) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
         }
-        val type = if (filename.endsWith(".png")) MediaType.IMAGE_PNG else MediaType.IMAGE_JPEG
+        val type = when (filename.substringAfterLast('.')) {
+            "png" -> MediaType.IMAGE_PNG
+            "webp" -> MediaType.parseMediaType("image/webp")
+            else -> MediaType.IMAGE_JPEG
+        }
         return ResponseEntity.ok()
             .contentType(type)
             .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")

@@ -130,4 +130,40 @@ class ArtworkControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.statusCode)
         assertEquals(0L, Files.list(directory).use { it.count() })
     }
+
+    private fun webp(name: String): ByteArray =
+        requireNotNull(javaClass.getResourceAsStream("/artworks/$name.webp")).use { it.readBytes() }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["lossy", "lossless"])
+    fun `webp is decoded stored unchanged and served with correct content type`(name: String) {
+        val bytes = webp(name)
+        val api = controller()
+        // Detection must use bytes, including when the client supplies misleading metadata.
+        val url = api.upload(file(bytes, "image/jpeg", "poster.jpg")).url
+        assertTrue(url.endsWith(".webp"))
+        val response = api.get(url.substringAfterLast('/'))
+        assertEquals(MediaType.parseMediaType("image/webp"), response.headers.contentType)
+        assertEquals("public, max-age=86400", response.headers.cacheControl)
+        assertArrayEquals(bytes, response.body!!.inputStream.use { it.readBytes() })
+    }
+
+    @Test
+    fun `webp filename and header cannot disguise invalid image bytes`() {
+        val ex = assertThrows(ResponseStatusException::class.java) {
+            controller().upload(file("not an image".toByteArray(), "image/webp", "poster.webp"))
+        }
+        assertEquals(HttpStatus.BAD_REQUEST, ex.statusCode)
+        assertEquals(0L, Files.list(directory).use { it.count() })
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["lossy", "lossless"])
+    fun `truncated webp is rejected without writing a file`(name: String) {
+        val ex = assertThrows(ResponseStatusException::class.java) {
+            controller().upload(file(webp(name).copyOf(24), "image/webp", "poster.webp"))
+        }
+        assertEquals(HttpStatus.BAD_REQUEST, ex.statusCode)
+        assertEquals(0L, Files.list(directory).use { it.count() })
+    }
 }
