@@ -1,6 +1,11 @@
 package com.example.movieapp.gateway.graphql
 
 import com.example.movieapp.gateway.client.*
+import graphql.GraphQLError
+import graphql.GraphqlErrorBuilder
+import graphql.schema.DataFetchingEnvironment
+import org.springframework.graphql.data.method.annotation.GraphQlExceptionHandler
+import org.springframework.graphql.execution.ErrorType
 
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -78,6 +83,18 @@ class MovieGraphQLController(
     @MutationMapping
     fun deletePerson(@Argument id: String): Boolean =
         peopleClient.deletePerson(id)
+
+    @GraphQlExceptionHandler
+    fun handleGrpcError(exception: StatusRuntimeException, environment: DataFetchingEnvironment): GraphQLError {
+        val (type, message) = when (exception.status.code) {
+            Status.Code.FAILED_PRECONDITION -> ErrorType.BAD_REQUEST to
+                "This person is credited in a movie. Remove their movie credits before deleting them."
+            Status.Code.UNAVAILABLE, Status.Code.DEADLINE_EXCEEDED -> ErrorType.INTERNAL_ERROR to
+                "Unable to reach a backend service. Please retry."
+            else -> ErrorType.INTERNAL_ERROR to "The operation failed. Please retry."
+        }
+        return GraphqlErrorBuilder.newError(environment).errorType(type).message(message).build()
+    }
 
     @QueryMapping
     fun searchPeople(

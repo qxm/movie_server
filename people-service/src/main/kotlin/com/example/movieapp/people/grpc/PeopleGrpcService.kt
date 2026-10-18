@@ -2,6 +2,7 @@ package com.example.movieapp.people.grpc
 
 import com.example.movieapp.people.entity.PersonEntity
 import com.example.movieapp.people.service.PersonService
+import com.example.movieapp.people.service.PersonInUseException
 import com.example.movieapp.proto.people.CreatePersonRequest
 import com.example.movieapp.proto.people.GetPersonRequest
 import com.example.movieapp.proto.people.PersonResponse
@@ -167,6 +168,10 @@ class PeopleGrpcService(
             responseObserver.onCompleted()
         } catch (e: IllegalArgumentException) {
             responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.message).asRuntimeException())
+        } catch (e: PersonInUseException) {
+            responseObserver.onError(Status.FAILED_PRECONDITION.withDescription(e.message).asRuntimeException())
+        } catch (e: StatusRuntimeException) {
+            responseObserver.onError(e)
         } catch (e: Exception) {
             responseObserver.onError(Status.INTERNAL.withDescription("Failed to delete person").withCause(e).asRuntimeException())
         }

@@ -146,4 +146,21 @@ class PeopleGrpcServiceTest {
         grpc.searchPeople(SearchPeopleRequest.newBuilder().setKeyword("Alice").build(), observer)
         assertEquals("Alice", observer.single().peopleList.single().name)
     }
+
+    @Test
+    fun `linked person delete returns failed precondition`() {
+        `when`(people.deletePerson(person.id)).thenThrow(com.example.movieapp.people.service.PersonInUseException())
+        val observer = Observer<DeletePersonResponse>()
+        grpc.deletePerson(DeletePersonRequest.newBuilder().setId(person.id.toString()).build(), observer)
+        observer.assertError(Status.Code.FAILED_PRECONDITION)
+        assertTrue(Status.fromThrowable(observer.failure!!).description!!.contains("movie credits"))
+    }
+
+    @Test
+    fun `delete preserves association lookup unavailable status`() {
+        `when`(people.deletePerson(person.id)).thenThrow(Status.UNAVAILABLE.asRuntimeException())
+        val observer = Observer<DeletePersonResponse>()
+        grpc.deletePerson(DeletePersonRequest.newBuilder().setId(person.id.toString()).build(), observer)
+        observer.assertError(Status.Code.UNAVAILABLE)
+    }
 }

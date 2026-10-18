@@ -14,7 +14,8 @@ import java.util.UUID
 
 class PersonServiceTest {
     private val repository = mock(PersonRepository::class.java)
-    private val service = PersonService(repository)
+    private val movieCredits = mock(com.example.movieapp.people.client.MovieCreditClient::class.java)
+    private val service = PersonService(repository, movieCredits)
 
     private fun echoSavedPerson() {
         doAnswer { it.arguments[0] }.`when`(repository).save(any(PersonEntity::class.java) ?: PersonEntity())
@@ -134,5 +135,30 @@ class PersonServiceTest {
         val people = (1..25).map { PersonEntity(name = "Person $it") }
         `when`(repository.findByNameContainingIgnoreCaseOrderByNameAsc("Alice")).thenReturn(people)
         assertEquals(people.take(20), service.searchPeople(" Alice "))
+    }
+
+    @Test
+    fun `linked person cannot be deleted`() {
+        val id = UUID.randomUUID()
+        `when`(repository.existsById(id)).thenReturn(true)
+        `when`(movieCredits.hasCredits(id)).thenReturn(true)
+        assertThrows(PersonInUseException::class.java) { service.deletePerson(id) }
+        verify(repository, never()).deleteById(id)
+    }
+
+    @Test
+    fun `association lookup failure leaves person untouched`() {
+        val id = UUID.randomUUID()
+        `when`(repository.existsById(id)).thenReturn(true)
+        val failure = io.grpc.Status.UNAVAILABLE.asRuntimeException()
+        `when`(movieCredits.hasCredits(id)).thenThrow(failure)
+        assertSame(failure, assertThrows(io.grpc.StatusRuntimeException::class.java) { service.deletePerson(id) })
+        verify(repository, never()).deleteById(id)
+    }
+
+    @Test
+    fun `missing person does not require movie service`() {
+        assertFalse(service.deletePerson(UUID.randomUUID()))
+        verifyNoInteractions(movieCredits)
     }
 }

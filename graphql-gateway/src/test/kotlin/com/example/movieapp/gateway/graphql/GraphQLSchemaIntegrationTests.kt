@@ -93,4 +93,23 @@ class GraphQLSchemaIntegrationTests {
                 assertEquals("movie", errors.single().path)
             }.path("movie").valueIsNull()
     }
+
+    @Test
+    fun `linked person deletion exposes actionable GraphQL error`() {
+        `when`(people.deletePerson("p1")).thenThrow(Status.FAILED_PRECONDITION.asRuntimeException())
+        graphql.document("""mutation { deletePerson(id: "p1") }""").execute().errors().satisfy { errors ->
+            assertEquals(1, errors.size)
+            assertTrue(requireNotNull(errors.single().message).contains("Remove their movie credits"))
+            assertEquals("deletePerson", errors.single().path)
+        }
+    }
+
+    @Test
+    fun `unavailable deletion check exposes retry message`() {
+        `when`(people.deletePerson("p1")).thenThrow(Status.UNAVAILABLE.asRuntimeException())
+        graphql.document("""mutation { deletePerson(id: "p1") }""").execute().errors().satisfy { errors ->
+            assertEquals(1, errors.size)
+            assertTrue(requireNotNull(errors.single().message).contains("Please retry"))
+        }
+    }
 }

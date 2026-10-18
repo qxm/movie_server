@@ -50,3 +50,11 @@ Integration HTML reports: `<module>/build/reports/tests/integrationTest/index.ht
 JUnit XML: `<module>/build/test-results/integrationTest/`.
 
 These tests do not replace full-process end-to-end tests over HTTP and gRPC, multipart request limit tests, or checks against a production database engine.
+
+## Person deletion guard
+
+People-service checks the existing movie-service ListMovies RPC before deleting an existing person. Any credit role blocks deletion with FAILED_PRECONDITION. Failed/timed-out checks refuse deletion with UNAVAILABLE. Configure `grpc.movie.host` and `grpc.movie.port` in people-service (defaults: 127.0.0.1:9091). The gateway exposes an actionable error in the existing frontend delete dialog.
+
+Tests cover all four credit roles, no matches, later-movie matches, missing people, failed checks, untouched repository/database records, deletion after removing credits, gRPC status preservation, and GraphQL error messages.
+
+This intentionally small guard scans the movie list. It is suitable for this assessment's collection size; it is not an atomic cross-service foreign-key constraint. Concurrent credit creation and person deletion can still race. A dedicated existence RPC and coordinated writes would be follow-up work for production scale/concurrency.

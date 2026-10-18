@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Import
 @DataJpaTest
 @Import(PersonService::class)
 class PersonPersistenceIntegrationTests {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    lateinit var movieCredits: com.example.movieapp.people.client.MovieCreditClient
     @Autowired lateinit var service: PersonService
     @Autowired lateinit var repository: PersonRepository
     @Autowired lateinit var entityManager: jakarta.persistence.EntityManager
@@ -66,5 +68,19 @@ class PersonPersistenceIntegrationTests {
         listOf("Zulu", "Alpha", "Bravo").forEach { service.createPerson(it, null) }
         reload()
         assertEquals(listOf("Alpha", "Bravo", "Zulu"), service.getAllPeople().map { it.name })
+    }
+
+    @Test
+    fun `rejected deletion keeps person in database and can succeed after credits are removed`() {
+        val person = service.createPerson("Protected", "Bio")
+        reload()
+        org.mockito.Mockito.`when`(movieCredits.hasCredits(person.id)).thenReturn(true)
+        assertThrows(PersonInUseException::class.java) { service.deletePerson(person.id) }
+        reload()
+        assertEquals("Protected", service.getPerson(person.id)!!.name)
+        org.mockito.Mockito.`when`(movieCredits.hasCredits(person.id)).thenReturn(false)
+        assertTrue(service.deletePerson(person.id))
+        reload()
+        assertNull(service.getPerson(person.id))
     }
 }
