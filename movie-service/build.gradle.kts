@@ -62,3 +62,16 @@ tasks.register<Test>("unitTest") {
     systemProperty("java.io.tmpdir", temporaryDirectory.absolutePath)
     doFirst { temporaryDirectory.mkdirs() }
 }
+
+// Spring slices with an embedded database or the real GraphQL schema; no servers.
+tasks.register<Test>("integrationTest") {
+    group = "verification"
+    description = "Runs isolated persistence and GraphQL schema integration tests."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform()
+    filter { includeTestsMatching("*IntegrationTests") }
+    val temporaryDirectory = layout.buildDirectory.dir("tmp/integrationTest").get().asFile
+    systemProperty("java.io.tmpdir", temporaryDirectory.absolutePath)
+    doFirst { temporaryDirectory.mkdirs() }
+}
