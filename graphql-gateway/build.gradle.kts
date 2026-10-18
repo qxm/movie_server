@@ -46,3 +46,16 @@ kotlin {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
+// Fast, isolated tests. Existing *ApplicationTests remain in the regular test task.
+tasks.register<Test>("unitTest") {
+    group = "verification"
+    description = "Runs isolated unit tests without starting Spring services or databases."
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform()
+    filter { includeTestsMatching("*Test") }
+    val temporaryDirectory = layout.buildDirectory.dir("tmp/unitTest").get().asFile
+    systemProperty("java.io.tmpdir", temporaryDirectory.absolutePath)
+    doFirst { temporaryDirectory.mkdirs() }
+}
