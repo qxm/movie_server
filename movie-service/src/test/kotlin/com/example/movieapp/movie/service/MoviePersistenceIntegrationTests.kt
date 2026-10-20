@@ -1,5 +1,7 @@
 package com.example.movieapp.movie.service
 
+import com.example.movieapp.common.CreditRole
+
 import com.example.movieapp.movie.client.PeopleClient
 import com.example.movieapp.movie.entity.MovieCreditEntity
 import com.example.movieapp.movie.repository.MovieCreditRepository
@@ -32,7 +34,7 @@ class MoviePersistenceIntegrationTests {
         val personId = UUID.randomUUID()
         `when`(people.personExists(personId)).thenReturn(true)
         return service.createMovie(title, 2001, " Story ", " /poster.png ",
-            listOf(CreditInput(personId, " actor ", " Hero ")))
+            listOf(CreditInput(personId, " ${CreditRole.ACTOR.name.lowercase()} ", " Hero ")))
     }
 
     @AfterEach
@@ -49,7 +51,7 @@ class MoviePersistenceIntegrationTests {
         assertEquals("Movie", loaded.movie.title)
         assertEquals("Story", loaded.movie.synopsis)
         assertEquals("/poster.png", loaded.movie.artworkUrl)
-        assertEquals("ACTOR", loaded.credits.single().role)
+        assertEquals(CreditRole.ACTOR.name, loaded.credits.single().role)
         assertEquals("Hero", loaded.credits.single().characterName)
         assertEquals(created.movie.id, loaded.credits.single().movieId)
     }
@@ -70,7 +72,7 @@ class MoviePersistenceIntegrationTests {
         val personId = UUID.randomUUID()
         `when`(people.personExists(personId)).thenReturn(true)
         service.updateMovie(original.movie.id, "Updated", 2020, "", "",
-            listOf(CreditInput(personId, "DIRECTOR", "ignored")))
+            listOf(CreditInput(personId, CreditRole.DIRECTOR.name, "ignored")))
         val loaded = service.getMovie(original.movie.id)!!
         assertEquals("Updated", loaded.movie.title)
         assertEquals(personId, loaded.credits.single().personId)

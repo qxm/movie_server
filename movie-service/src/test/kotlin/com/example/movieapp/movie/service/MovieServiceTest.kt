@@ -1,5 +1,7 @@
 package com.example.movieapp.movie.service
 
+import com.example.movieapp.common.CreditRole
+
 import com.example.movieapp.movie.client.PeopleClient
 import com.example.movieapp.movie.entity.MovieEntity
 import com.example.movieapp.movie.entity.MovieCreditEntity
@@ -76,10 +78,10 @@ class MovieServiceTest {
         echoSaves()
         `when`(people.personExists(personId)).thenReturn(true)
         val result = create(cast = listOf(
-            CreditInput(personId, " actor ", " Hero "),
-            CreditInput(personId, "director", "Ignored")
+            CreditInput(personId, " ${CreditRole.ACTOR.name.lowercase()} ", " Hero "),
+            CreditInput(personId, CreditRole.DIRECTOR.name.lowercase(), "Ignored")
         ))
-        assertEquals(listOf("ACTOR", "DIRECTOR"), result.credits.map { it.role })
+        assertEquals(listOf(CreditRole.ACTOR.name, CreditRole.DIRECTOR.name), result.credits.map { it.role })
         assertEquals(listOf("Hero", ""), result.credits.map { it.characterName })
         assertTrue(result.credits.all { it.movieId == result.movie.id && it.personId == personId })
         verify(people, times(1)).personExists(personId)
@@ -100,14 +102,14 @@ class MovieServiceTest {
     fun `character name length limit is enforced`() {
         echoSaves()
         `when`(people.personExists(personId)).thenReturn(true)
-        assertEquals(255, create(cast = listOf(CreditInput(personId, "ACTOR", "a".repeat(255)))).credits.single().characterName.length)
-        assertThrows(IllegalArgumentException::class.java) { create(cast = listOf(CreditInput(personId, "ACTOR", "a".repeat(256)))) }
+        assertEquals(255, create(cast = listOf(CreditInput(personId, CreditRole.ACTOR.name, "a".repeat(255)))).credits.single().characterName.length)
+        assertThrows(IllegalArgumentException::class.java) { create(cast = listOf(CreditInput(personId, CreditRole.ACTOR.name, "a".repeat(256)))) }
     }
 
     @Test
     fun `duplicates are detected after normalization`() {
         assertThrows(IllegalArgumentException::class.java) {
-            create(cast = listOf(CreditInput(personId, "actor", " Hero "), CreditInput(personId, " ACTOR ", "Hero")))
+            create(cast = listOf(CreditInput(personId, CreditRole.ACTOR.name.lowercase(), " Hero "), CreditInput(personId, " ${CreditRole.ACTOR.name} ", "Hero")))
         }
         verifyNoInteractions(movies, credits, people)
     }
@@ -115,7 +117,7 @@ class MovieServiceTest {
     @Test
     fun `non actor character values do not bypass duplicate check`() {
         assertThrows(IllegalArgumentException::class.java) {
-            create(cast = listOf(CreditInput(personId, "DIRECTOR", "a"), CreditInput(personId, "DIRECTOR", "b")))
+            create(cast = listOf(CreditInput(personId, CreditRole.DIRECTOR.name, "a"), CreditInput(personId, CreditRole.DIRECTOR.name, "b")))
         }
         verifyNoInteractions(movies, credits, people)
     }
@@ -124,12 +126,12 @@ class MovieServiceTest {
     fun `same actor may play different characters`() {
         echoSaves()
         `when`(people.personExists(personId)).thenReturn(true)
-        assertEquals(2, create(cast = listOf(CreditInput(personId, "ACTOR", "A"), CreditInput(personId, "ACTOR", "B"))).credits.size)
+        assertEquals(2, create(cast = listOf(CreditInput(personId, CreditRole.ACTOR.name, "A"), CreditInput(personId, CreditRole.ACTOR.name, "B"))).credits.size)
     }
 
     @Test
     fun `missing person prevents all persistence`() {
-        assertThrows(IllegalArgumentException::class.java) { create(cast = listOf(CreditInput(personId, "ACTOR", ""))) }
+        assertThrows(IllegalArgumentException::class.java) { create(cast = listOf(CreditInput(personId, CreditRole.ACTOR.name, ""))) }
         verifyNoInteractions(movies, credits)
     }
 
@@ -137,7 +139,7 @@ class MovieServiceTest {
     fun `people service failure is propagated without persistence`() {
         val failure = Status.UNAVAILABLE.asRuntimeException()
         `when`(people.personExists(personId)).thenThrow(failure)
-        assertSame(failure, assertThrows(StatusRuntimeException::class.java) { create(cast = listOf(CreditInput(personId, "ACTOR", ""))) })
+        assertSame(failure, assertThrows(StatusRuntimeException::class.java) { create(cast = listOf(CreditInput(personId, CreditRole.ACTOR.name, ""))) })
         verifyNoInteractions(movies, credits)
     }
 
@@ -152,7 +154,7 @@ class MovieServiceTest {
     @Test
     fun `get includes credits`() {
         val movie = MovieEntity(title = "Movie")
-        val cast = listOf(MovieCreditEntity(movieId = movie.id, personId = personId, role = "ACTOR"))
+        val cast = listOf(MovieCreditEntity(movieId = movie.id, personId = personId, role = CreditRole.ACTOR.name))
         `when`(movies.findById(movie.id)).thenReturn(Optional.of(movie))
         `when`(credits.findByMovieId(movie.id)).thenReturn(cast)
         val result = service.getMovie(movie.id)!!
@@ -171,7 +173,7 @@ class MovieServiceTest {
     fun `list batches credits and associates them with the correct movie`() {
         val first = MovieEntity(title = "A")
         val second = MovieEntity(title = "B")
-        val cast = listOf(MovieCreditEntity(movieId = first.id, personId = personId, role = "ACTOR"))
+        val cast = listOf(MovieCreditEntity(movieId = first.id, personId = personId, role = CreditRole.ACTOR.name))
         `when`(movies.findAll(Sort.by(Sort.Direction.ASC, "title"))).thenReturn(listOf(first, second))
         `when`(credits.findByMovieIdIn(listOf(first.id, second.id))).thenReturn(cast)
         val result = service.listMovies()
@@ -216,7 +218,7 @@ class MovieServiceTest {
         val movie = MovieEntity(title = "Old")
         `when`(movies.findById(movie.id)).thenReturn(Optional.of(movie))
         `when`(people.personExists(personId)).thenReturn(true)
-        val result = service.updateMovie(movie.id, " New ", 2000, " Story ", " /new.png ", listOf(CreditInput(personId, "actor", " Hero ")))!!
+        val result = service.updateMovie(movie.id, " New ", 2000, " Story ", " /new.png ", listOf(CreditInput(personId, CreditRole.ACTOR.name.lowercase(), " Hero ")))!!
         assertSame(movie, result.movie)
         assertEquals("New", movie.title)
         assertEquals(2000, movie.releaseYear)
@@ -236,7 +238,7 @@ class MovieServiceTest {
         val movie = MovieEntity(title = "Old")
         `when`(movies.findById(movie.id)).thenReturn(Optional.of(movie))
         assertThrows(IllegalArgumentException::class.java) {
-            service.updateMovie(movie.id, "New", 0, "", "", listOf(CreditInput(personId, "ACTOR", "")))
+            service.updateMovie(movie.id, "New", 0, "", "", listOf(CreditInput(personId, CreditRole.ACTOR.name, "")))
         }
         assertEquals("Old", movie.title)
         verifyNoInteractions(credits)
@@ -271,7 +273,7 @@ class MovieServiceTest {
     fun `duplicate update credits are rejected without clearing existing ones`() {
         val movie = MovieEntity(title = "Old")
         `when`(movies.findById(movie.id)).thenReturn(Optional.of(movie))
-        val credit = CreditInput(personId, "ACTOR", "Hero")
+        val credit = CreditInput(personId, CreditRole.ACTOR.name, "Hero")
         assertThrows(IllegalArgumentException::class.java) { service.updateMovie(movie.id, "New", 0, "", "", listOf(credit, credit)) }
         assertEquals("Old", movie.title)
         verifyNoInteractions(credits, people)
@@ -282,7 +284,7 @@ class MovieServiceTest {
         val otherPerson = UUID.randomUUID()
         `when`(people.personExists(personId)).thenReturn(true)
         assertThrows(IllegalArgumentException::class.java) {
-            create(cast = listOf(CreditInput(personId, "ACTOR", "A"), CreditInput(otherPerson, "ACTOR", "B")))
+            create(cast = listOf(CreditInput(personId, CreditRole.ACTOR.name, "A"), CreditInput(otherPerson, CreditRole.ACTOR.name, "B")))
         }
         verify(people).personExists(personId)
         verify(people).personExists(otherPerson)

@@ -1,5 +1,7 @@
 package com.example.movieapp.people.client
 
+import com.example.movieapp.common.CreditRole
+
 import com.example.movieapp.proto.movie.*
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -24,14 +26,13 @@ class MovieCreditClientTest {
     }
 
     @ParameterizedTest
-    @EnumSource(Role::class)
-    fun `every credit role blocks deletion even in a later movie`(role: Role) {
+    @EnumSource(CreditRole::class)
+    fun `every credit role blocks deletion even in a later movie`(role: CreditRole) {
         respond(MovieResponse.getDefaultInstance(), MovieResponse.newBuilder().addCredits(
             MovieCredit.newBuilder().setPersonId(id.toString()).setRole(role.name)).build())
         assertTrue(client.hasCredits(id))
         verify(stub).withDeadlineAfter(3, TimeUnit.SECONDS)
     }
-    enum class Role { ACTOR, DIRECTOR, WRITER, PRODUCER }
 
     @Test
     fun `empty movie collection has no associations`() {
@@ -42,7 +43,7 @@ class MovieCreditClientTest {
     @Test
     fun `other people's credits do not block deletion`() {
         respond(MovieResponse.newBuilder().addCredits(MovieCredit.newBuilder()
-            .setPersonId(UUID.randomUUID().toString()).setRole("ACTOR")).build())
+            .setPersonId(UUID.randomUUID().toString()).setRole(CreditRole.ACTOR.name)).build())
         assertFalse(client.hasCredits(id))
     }
 

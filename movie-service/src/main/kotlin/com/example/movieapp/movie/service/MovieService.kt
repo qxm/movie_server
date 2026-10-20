@@ -1,5 +1,7 @@
 package com.example.movieapp.movie.service
 
+import com.example.movieapp.common.CreditRole
+
 import com.example.movieapp.movie.client.PeopleClient
 import com.example.movieapp.movie.entity.MovieCreditEntity
 import com.example.movieapp.movie.entity.MovieEntity
@@ -16,10 +18,6 @@ class MovieService(
     private val creditRepository: MovieCreditRepository,
     private val peopleClient: PeopleClient
 ) {
-    private val allowedRoles = setOf(
-        "ACTOR", "DIRECTOR", "WRITER", "PRODUCER"
-    )
-
     @Transactional(readOnly = true)
     fun getMovie(id: UUID): MovieWithCredits? {
         val movie = movieRepository.findById(id).orElse(null)
@@ -75,12 +73,8 @@ class MovieService(
         }
 
         val normalizedCredits = credits.map { credit ->
-            val role = credit.role.trim().uppercase()
+            val role = CreditRole.from(credit.role)
             val character = credit.characterName.trim()
-
-            require(role in allowedRoles) {
-                "Unsupported credit role: $role"
-            }
 
             require(character.length <= 255) {
                 "Character name is too long"
@@ -88,8 +82,8 @@ class MovieService(
 
             CreditInput(
                 personId = credit.personId,
-                role = role,
-                characterName = if (role == "ACTOR") character else ""
+                role = role.name,
+                characterName = if (role == CreditRole.ACTOR) character else ""
             )
         }
 
@@ -175,20 +169,17 @@ class MovieService(
 
         // Normalize credits
         val normalizedCredits = credits.map { credit ->
-            val role = credit.role.trim().uppercase()
+            val role = CreditRole.from(credit.role)
             val character = credit.characterName.trim()
 
-            require(role in allowedRoles) {
-                "Unsupported credit role: $role"
-            }
             require(character.length <= 255) {
                 "Character name is too long"
             }
 
             CreditInput(
                 personId = credit.personId,
-                role = role,
-                characterName = if (role == "ACTOR") character else ""
+                role = role.name,
+                characterName = if (role == CreditRole.ACTOR) character else ""
             )
         }
 

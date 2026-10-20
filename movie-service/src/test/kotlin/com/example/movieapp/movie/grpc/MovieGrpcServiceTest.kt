@@ -1,5 +1,7 @@
 package com.example.movieapp.movie.grpc
 
+import com.example.movieapp.common.CreditRole
+
 import com.example.movieapp.movie.entity.MovieEntity
 import com.example.movieapp.movie.entity.MovieCreditEntity
 import com.example.movieapp.movie.service.*
@@ -16,7 +18,7 @@ class MovieGrpcServiceTest {
     private val grpc = MovieGrpcService(movies)
     private val movie = MovieEntity(title = "Movie", releaseYear = 2000, synopsis = "Story", artworkUrl = "/poster.png")
     private val personId = UUID.randomUUID()
-    private val cast = listOf(MovieCreditEntity(movieId = movie.id, personId = personId, role = "ACTOR", characterName = "Hero"))
+    private val cast = listOf(MovieCreditEntity(movieId = movie.id, personId = personId, role = CreditRole.ACTOR.name, characterName = "Hero"))
     private val result = MovieWithCredits(movie, cast)
 
     private class Observer<T> : StreamObserver<T> {
@@ -51,7 +53,7 @@ class MovieGrpcServiceTest {
         assertEquals("Story", response.synopsis)
         assertEquals("/poster.png", response.artworkUrl)
         assertEquals(personId.toString(), response.creditsList.single().personId)
-        assertEquals("ACTOR", response.creditsList.single().role)
+        assertEquals(CreditRole.ACTOR.name, response.creditsList.single().role)
         assertEquals("Hero", response.creditsList.single().characterName)
     }
 
@@ -99,11 +101,11 @@ class MovieGrpcServiceTest {
 
     @Test
     fun `create forwards every request field and credit`() {
-        val inputs = listOf(CreditInput(personId, "ACTOR", "Hero"))
+        val inputs = listOf(CreditInput(personId, CreditRole.ACTOR.name, "Hero"))
         `when`(movies.createMovie("Movie", 2000, "Story", "/poster.png", inputs)).thenReturn(result)
         val request = CreateMovieRequest.newBuilder().setTitle("Movie").setReleaseYear(2000)
             .setSynopsis("Story").setArtworkUrl("/poster.png")
-            .addCredits(MovieCredit.newBuilder().setPersonId(personId.toString()).setRole("ACTOR").setCharacterName("Hero"))
+            .addCredits(MovieCredit.newBuilder().setPersonId(personId.toString()).setRole(CreditRole.ACTOR.name).setCharacterName("Hero"))
             .build()
         val observer = Observer<MovieResponse>()
         grpc.createMovie(request, observer)
@@ -114,7 +116,7 @@ class MovieGrpcServiceTest {
     @Test
     fun `create malformed person id returns invalid argument`() {
         val request = CreateMovieRequest.newBuilder().setTitle("Movie")
-            .addCredits(MovieCredit.newBuilder().setPersonId("bad-id").setRole("ACTOR")).build()
+            .addCredits(MovieCredit.newBuilder().setPersonId("bad-id").setRole(CreditRole.ACTOR.name)).build()
         val observer = Observer<MovieResponse>()
         grpc.createMovie(request, observer)
         observer.assertError(Status.Code.INVALID_ARGUMENT)

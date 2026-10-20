@@ -58,3 +58,7 @@ People-service checks the existing movie-service ListMovies RPC before deleting 
 Tests cover all four credit roles, no matches, later-movie matches, missing people, failed checks, untouched repository/database records, deletion after removing credits, gRPC status preservation, and GraphQL error messages.
 
 This intentionally small guard scans the movie list. It is suitable for this assessment's collection size; it is not an atomic cross-service foreign-key constraint. Concurrent credit creation and person deletion can still race. A dedicated existence RPC and coordinated writes would be follow-up work for production scale/concurrency.
+
+## Shared credit roles
+
+The proto module exposes com.example.movieapp.common.CreditRole to all backend services. Movie creation and update normalize and validate roles through CreditRole.from; string API/database values are derived from enum.name. CreditRoleTest covers every enum value, whitespace/case normalization, invalid values, and locale independence. Existing persistence and GraphQL tests verify the unchanged string contract.

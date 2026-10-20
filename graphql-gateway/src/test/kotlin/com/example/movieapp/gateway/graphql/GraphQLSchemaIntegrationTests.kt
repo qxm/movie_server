@@ -1,5 +1,7 @@
 package com.example.movieapp.gateway.graphql
 
+import com.example.movieapp.common.CreditRole
+
 import com.example.movieapp.gateway.client.*
 import io.grpc.Status
 import org.junit.jupiter.api.Test
@@ -29,9 +31,9 @@ class GraphQLSchemaIntegrationTests {
 
     @Test
     fun `create movie binds nested credits and default character name`() {
-        val input = CreateMovieInput("Movie", credits = listOf(MovieCreditDto("p1", "DIRECTOR", "")))
+        val input = CreateMovieInput("Movie", credits = listOf(MovieCreditDto("p1", CreditRole.DIRECTOR.name, "")))
         `when`(movies.createMovie(input)).thenReturn(movie)
-        graphql.document("""mutation { createMovie(input: {title: "Movie", credits: [{personId: "p1", role: "DIRECTOR"}]}) { id } }""")
+        graphql.document("""mutation { createMovie(input: {title: "Movie", credits: [{personId: "p1", role: "${CreditRole.DIRECTOR.name}"}]}) { id } }""")
             .execute().path("createMovie.id").entity(String::class.java).isEqualTo("m1")
         verify(movies).createMovie(input)
     }
@@ -59,7 +61,7 @@ class GraphQLSchemaIntegrationTests {
 
     @Test
     fun `credits resolve nested person through schema mapping`() {
-        `when`(movies.getMovie("m1")).thenReturn(movie.copy(credits = listOf(MovieCreditDto("p1", "ACTOR", "Hero"))))
+        `when`(movies.getMovie("m1")).thenReturn(movie.copy(credits = listOf(MovieCreditDto("p1", CreditRole.ACTOR.name, "Hero"))))
         `when`(people.getPerson("p1")).thenReturn(PersonDto("p1", "Alice", "Bio"))
         graphql.document("""{ movie(id: "m1") { credits { characterName person { name biography } } } }""")
             .execute().path("movie.credits[0].person.name").entity(String::class.java).isEqualTo("Alice")
@@ -68,7 +70,7 @@ class GraphQLSchemaIntegrationTests {
 
     @Test
     fun `deleted credit person is nullable while movie stays available`() {
-        `when`(movies.getMovie("m1")).thenReturn(movie.copy(credits = listOf(MovieCreditDto("gone", "ACTOR", "Hero"))))
+        `when`(movies.getMovie("m1")).thenReturn(movie.copy(credits = listOf(MovieCreditDto("gone", CreditRole.ACTOR.name, "Hero"))))
         `when`(people.getPerson("gone")).thenThrow(Status.NOT_FOUND.asRuntimeException())
         graphql.document("""{ movie(id: "m1") { id credits { person { id } role } } }""")
             .execute().errors().verify().path("movie.id").entity(String::class.java).isEqualTo("m1")

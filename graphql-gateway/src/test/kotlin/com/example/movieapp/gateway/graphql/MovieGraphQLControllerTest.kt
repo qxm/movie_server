@@ -1,5 +1,7 @@
 package com.example.movieapp.gateway.graphql
 
+import com.example.movieapp.common.CreditRole
+
 import com.example.movieapp.gateway.client.*
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -49,7 +51,7 @@ class MovieGraphQLControllerTest {
 
     @Test
     fun `create movie forwards all input fields and credits`() {
-        val input = CreateMovieInput("Movie", 2000, "Story", "/poster.png", listOf(MovieCreditDto(person.id, "ACTOR", "Hero")))
+        val input = CreateMovieInput("Movie", 2000, "Story", "/poster.png", listOf(MovieCreditDto(person.id, CreditRole.ACTOR.name, "Hero")))
         `when`(movies.createMovie(input)).thenReturn(movie)
         assertSame(movie, controller.createMovie(input))
         verify(movies).createMovie(input)
@@ -86,7 +88,7 @@ class MovieGraphQLControllerTest {
     @Test
     fun `credit resolver returns person or null when removed`() {
         val resolver = MovieCreditGraphQLController(people)
-        val credit = MovieCreditDto(person.id, "ACTOR", "Hero")
+        val credit = MovieCreditDto(person.id, CreditRole.ACTOR.name, "Hero")
         `when`(people.getPerson(person.id)).thenReturn(person).thenThrow(Status.NOT_FOUND.asRuntimeException())
         assertSame(person, resolver.person(credit))
         assertNull(resolver.person(credit))
@@ -97,7 +99,7 @@ class MovieGraphQLControllerTest {
         val failure = Status.UNAVAILABLE.asRuntimeException()
         `when`(people.getPerson(person.id)).thenThrow(failure)
         assertSame(failure, assertThrows(StatusRuntimeException::class.java) {
-            MovieCreditGraphQLController(people).person(MovieCreditDto(person.id, "ACTOR"))
+            MovieCreditGraphQLController(people).person(MovieCreditDto(person.id, CreditRole.ACTOR.name))
         })
     }
 }
