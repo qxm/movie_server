@@ -3,8 +3,8 @@
 
 # movie_server
 ## How to start
-./gradlew :proto:generateProto
-./gradlew :people-service:bootRun
-./gradlew :movie-service:bootRun
-./gradlew :graphql-gateway:bootRun
+1 ./gradlew :proto:generateProto
+2 ./gradlew :people-service:bootRun
+3 ./gradlew :movie-service:bootRun
+4 ./gradlew :graphql-gateway:bootRun
 
