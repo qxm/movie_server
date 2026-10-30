@@ -163,4 +163,29 @@ class PeopleGrpcServiceTest {
         grpc.deletePerson(DeletePersonRequest.newBuilder().setId(person.id.toString()).build(), observer)
         observer.assertError(Status.Code.UNAVAILABLE)
     }
+
+    @Test
+    fun `create forwards photo and returns it through protobuf`() {
+        val photo = "/api/artworks/person.webp"
+        val result = PersonEntity(name = "Alice", photoUrl = photo)
+        `when`(people.createPerson("Alice", "", photo)).thenReturn(result)
+        val observer = Observer<PersonResponse>()
+        grpc.createPerson(CreatePersonRequest.newBuilder().setName("Alice").setPhotoUrl(photo).build(), observer)
+        assertEquals(photo, observer.single().photoUrl)
+    }
+
+    @Test
+    fun `update distinguishes omitted photo field from explicit removal`() {
+        `when`(people.updatePerson(person.id, "Alice", "", null)).thenReturn(person)
+        `when`(people.updatePerson(person.id, "Alice", "", "")).thenReturn(person)
+        val base = UpdatePersonRequest.newBuilder().setId(person.id.toString()).setName("Alice")
+        val legacy = Observer<PersonResponse>()
+        grpc.updatePerson(base.build(), legacy)
+        assertEquals("", legacy.single().photoUrl)
+        verify(people).updatePerson(person.id, "Alice", "", null)
+        val cleared = Observer<PersonResponse>()
+        grpc.updatePerson(base.setPhotoUrl("").build(), cleared)
+        assertEquals("", cleared.single().photoUrl)
+        verify(people).updatePerson(person.id, "Alice", "", "")
+    }
 }

@@ -66,3 +66,9 @@ The proto module exposes com.example.movieapp.common.CreditRole to all backend s
 ## Media service HTTP integration
 
 ArtworkController and its 21 tests and WebP fixtures moved from movie-service to media-service. ArtworkHttpIntegrationTests starts a full, independent media-service on a random HTTP port and temporary storage, without databases or gRPC services. It verifies PNG/WebP upload/download, file-part validation, invalid image content, the configured 5 MB multipart limit, and missing-image responses. Reports use the same unitTest/integrationTest paths as the other modules.
+
+## Person photo coverage
+
+Person service tests verify nullable/normalized photo URLs, legacy update preservation, explicit removal, invalid URL length, persistence across reloads, and non-destructive example seeding. gRPC tests verify request/response photo mapping and optional-field presence. Gateway client and schema tests verify photo input/output, nullable legacy records, removal, search results, and nested movie-credit people.
+
+All image bytes remain owned by media-service and use its existing upload/read tests. Tests do not modify real profile databases or real image files.

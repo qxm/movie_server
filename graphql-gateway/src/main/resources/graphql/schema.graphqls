@@ -24,6 +24,7 @@ type Person {
     id: ID!
     name: String!
     biography: String!
+    photoUrl: String
 }
 
 
@@ -46,11 +47,13 @@ input UpdateMovieInput {
 input CreatePersonInput {
     name: String!
     biography: String = ""
+    photoUrl: String
 }
 
 input UpdatePersonInput {
      name: String!
      biography: String
+     photoUrl: String
  }
 
 type Query {

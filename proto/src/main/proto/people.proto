@@ -28,12 +28,14 @@ message GetPersonRequest {
 message CreatePersonRequest {
   string name = 1;
   string biography = 2;
+  string photo_url = 3;
 }
 
 message PersonResponse {
   string id = 1;
   string name = 2;
   string biography = 3;
+  string photo_url = 4;
 }
 
 message ListPeopleRequest {
@@ -47,6 +49,7 @@ message UpdatePersonRequest {
   string id = 1;
   string name = 2;
   string biography = 3;
+  optional string photo_url = 4;
 }
 
 message DeletePersonRequest {

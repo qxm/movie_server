@@ -29,7 +29,8 @@ class PersonService(
     @Transactional
     fun createPerson(
         name: String,
-        biography: String?
+        biography: String?,
+        photoUrl: String? = null
     ): PersonEntity {
 
         val trimmedName = name.trim()
@@ -48,17 +49,20 @@ class PersonService(
                 name = trimmedName,
                 biography = biography
                     ?.trim()
-                    ?.takeIf { it.isNotEmpty() }
+                    ?.takeIf { it.isNotEmpty() },
+                photoUrl = normalizePhotoUrl(photoUrl)
             )
         )
     }
     @Transactional
-    fun updatePerson(id: UUID, name: String, biography: String?): PersonEntity? {
+    fun updatePerson(id: UUID, name: String, biography: String?, photoUrl: String? = null): PersonEntity? {
         val trimmedName = name.trim()
         require(trimmedName.isNotBlank()) { "Person name cannot be empty" }
         require(trimmedName.length <= 255) { "Person name is too long" }
 
+        val normalizedPhotoUrl = normalizePhotoUrl(photoUrl)
         val existing = repository.findById(id).orElse(null) ?: return null
+        if (photoUrl != null) existing.photoUrl = normalizedPhotoUrl
         existing.name = trimmedName
         existing.biography = biography?.trim()?.takeIf { it.isNotEmpty() }
         return repository.save(existing)
@@ -72,6 +76,12 @@ class PersonService(
         }
         repository.deleteById(id)
         return true
+    }
+
+    private fun normalizePhotoUrl(value: String?): String? {
+        val normalized = value?.trim()?.takeIf { it.isNotEmpty() }
+        require(normalized == null || normalized.length <= 2048) { "Photo URL is too long" }
+        return normalized
     }
 
     fun searchPeople(keyword: String): List<PersonEntity> {

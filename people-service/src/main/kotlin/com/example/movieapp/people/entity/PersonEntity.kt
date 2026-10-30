@@ -15,5 +15,8 @@ class PersonEntity(
     var name: String = "",
 
     @Column(columnDefinition = "TEXT")
-    var biography: String? = null
+    var biography: String? = null,
+
+    @Column(name = "photo_url", columnDefinition = "TEXT")
+    var photoUrl: String? = null
 )

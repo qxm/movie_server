@@ -7,17 +7,20 @@ import java.util.concurrent.TimeUnit
 data class PersonDto(
     val id: String,
     val name: String,
-    val biography: String
+    val biography: String,
+    val photoUrl: String? = null
 )
 
 data class CreatePersonInput(
     val name: String,
-    val biography: String = ""
+    val biography: String = "",
+    val photoUrl: String? = null
 )
 
 data class UpdatePersonInput(
     val name: String,
-    val biography: String? = null
+    val biography: String? = null,
+    val photoUrl: String? = null
 )
 
 @Component
@@ -47,6 +50,7 @@ class PeopleClient(
         val request = CreatePersonRequest.newBuilder()
             .setName(input.name)
             .setBiography(input.biography)
+            .setPhotoUrl(input.photoUrl ?: "")
             .build()
 
         return client().createPerson(request).toDto()
@@ -57,6 +61,7 @@ class PeopleClient(
             .setId(id)
             .setName(input.name)
             .setBiography(input.biography ?: "")
+            .apply { input.photoUrl?.let { setPhotoUrl(it) } }
             .build()
         return client().updatePerson(request).toDto()
     }
@@ -76,6 +81,7 @@ class PeopleClient(
     private fun PersonResponse.toDto() = PersonDto(
         id = id,
         name = name,
-        biography = biography
+        biography = biography,
+        photoUrl = photoUrl.takeIf { it.isNotBlank() }
     )
 }

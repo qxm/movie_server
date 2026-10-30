@@ -114,4 +114,45 @@ class GraphQLSchemaIntegrationTests {
             assertTrue(requireNotNull(errors.single().message).contains("Please retry"))
         }
     }
+
+    @Test
+    fun `create person binds photo URL and exposes it in GraphQL`() {
+        val input = CreatePersonInput("Alice", photoUrl = "/api/artworks/alice.webp")
+        `when`(people.createPerson(input)).thenReturn(PersonDto("p1", "Alice", "", input.photoUrl))
+        graphql.document("""mutation { createPerson(input: {name: "Alice", photoUrl: "/api/artworks/alice.webp"}) { id photoUrl } }""")
+            .execute().path("createPerson.photoUrl").entity(String::class.java).isEqualTo(requireNotNull(input.photoUrl))
+        verify(people).createPerson(input)
+    }
+
+    @Test
+    fun `old profiles expose nullable photo`() {
+        `when`(people.getPerson("p1")).thenReturn(PersonDto("p1", "Alice", ""))
+        graphql.document("""{ person(id: "p1") { id photoUrl } }""")
+            .execute().errors().verify().path("person.photoUrl").valueIsNull()
+    }
+
+    @Test
+    fun `explicit empty photo binds removal input`() {
+        val input = UpdatePersonInput("Alice", photoUrl = "")
+        `when`(people.updatePerson("p1", input)).thenReturn(PersonDto("p1", "Alice", ""))
+        graphql.document("""mutation { updatePerson(id: "p1", input: {name: "Alice", photoUrl: ""}) { photoUrl } }""")
+            .execute().path("updatePerson.photoUrl").valueIsNull()
+        verify(people).updatePerson("p1", input)
+    }
+
+    @Test
+    fun `search returns person photos`() {
+        val proto = com.example.movieapp.proto.people.PersonResponse.newBuilder().setId("p1").setName("Alice").setPhotoUrl("/api/artworks/alice.webp").build()
+        `when`(people.searchPeople("Alice")).thenReturn(listOf(proto))
+        graphql.document("""{ searchPeople(keyword: "Alice") { id photoUrl } }""")
+            .execute().path("searchPeople[0].photoUrl").entity(String::class.java).isEqualTo(proto.photoUrl)
+    }
+
+    @Test
+    fun `movie credit person exposes photo`() {
+        `when`(movies.getMovie("m1")).thenReturn(movie.copy(credits = listOf(MovieCreditDto("p1", CreditRole.ACTOR.name))))
+        `when`(people.getPerson("p1")).thenReturn(PersonDto("p1", "Alice", "", "/api/artworks/alice.webp"))
+        graphql.document("""{ movie(id: "m1") { credits { person { photoUrl } } } }""")
+            .execute().path("movie.credits[0].person.photoUrl").entity(String::class.java).isEqualTo("/api/artworks/alice.webp")
+    }
 }

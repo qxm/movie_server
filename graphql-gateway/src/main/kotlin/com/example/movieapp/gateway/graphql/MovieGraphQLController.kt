@@ -105,7 +105,8 @@ class MovieGraphQLController(
                 PersonDto(
                     id = person.id.toString(),
                     name = person.name,
-                    biography = person.biography
+                    biography = person.biography,
+                    photoUrl = person.photoUrl.takeIf { it.isNotBlank() }
                 )
             }
     }

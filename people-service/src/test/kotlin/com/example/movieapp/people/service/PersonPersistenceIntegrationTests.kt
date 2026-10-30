@@ -83,4 +83,21 @@ class PersonPersistenceIntegrationTests {
         reload()
         assertNull(service.getPerson(person.id))
     }
+
+    @Test
+    fun `photo survives reload and legacy edits and can be replaced and removed`() {
+        val person = service.createPerson("Photo Person", null, "/api/artworks/first.webp")
+        reload()
+        assertEquals("/api/artworks/first.webp", service.getPerson(person.id)!!.photoUrl)
+        service.updatePerson(person.id, "Renamed", "Bio")
+        reload()
+        assertEquals("/api/artworks/first.webp", service.getPerson(person.id)!!.photoUrl)
+        service.updatePerson(person.id, "Renamed", "Bio", "/api/artworks/second.png")
+        reload()
+        assertEquals("/api/artworks/second.png", service.getPerson(person.id)!!.photoUrl)
+        assertEquals("/api/artworks/second.png", service.searchPeople("Renamed").single().photoUrl)
+        service.updatePerson(person.id, "Renamed", "Bio", "")
+        reload()
+        assertNull(service.getPerson(person.id)!!.photoUrl)
+    }
 }

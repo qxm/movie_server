@@ -47,4 +47,4 @@ java -jar .\build\libs\media-service-0.0.1-SNAPSHOT.jar
 
 HTTP integration tests start media-service independently on a random port with a temporary storage directory. They verify PNG/WebP round trips, missing files, invalid content, and multipart size enforcement. No other backend service is required.
 
-This extraction does not add avatars, upload confirmation, temporary storage, or automatic orphan-image cleanup. Movies continue to save `artworkUrl` unchanged.
+The same upload endpoint serves movie posters and person photos. Movies store `artworkUrl`; people store `photoUrl`. This service does not add upload confirmation, temporary storage, or automatic orphan-image cleanup. Removing a business reference does not immediately delete the image file.

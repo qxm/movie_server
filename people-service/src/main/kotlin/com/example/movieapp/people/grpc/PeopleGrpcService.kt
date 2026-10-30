@@ -31,6 +31,7 @@ class PeopleGrpcService(
             .setId(id.toString())
             .setName(name)
             .setBiography(biography ?: "")
+            .setPhotoUrl(photoUrl ?: "")
             .build()
     }
 
@@ -80,7 +81,8 @@ class PeopleGrpcService(
         try {
             val person = personService.createPerson(
                 name = request.name,
-                biography = request.biography
+                biography = request.biography,
+                photoUrl = request.photoUrl.takeIf { it.isNotBlank() }
             )
 
             val response = person.toProto()
@@ -140,7 +142,7 @@ class PeopleGrpcService(
     ) {
         try {
             val id = UUID.fromString(request.id)
-            val person = personService.updatePerson(id, request.name, request.biography)
+            val person = personService.updatePerson(id, request.name, request.biography, if (request.hasPhotoUrl()) request.photoUrl else null)
             if (person == null) {
                 responseObserver.onError(Status.NOT_FOUND.withDescription("Person not found: $id").asRuntimeException())
                 return

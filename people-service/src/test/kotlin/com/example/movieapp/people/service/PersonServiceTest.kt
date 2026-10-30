@@ -161,4 +161,41 @@ class PersonServiceTest {
         assertFalse(service.deletePerson(UUID.randomUUID()))
         verifyNoInteractions(movieCredits)
     }
+
+    @Test
+    fun `create persists trimmed photo URL`() {
+        echoSavedPerson()
+        assertEquals("/api/artworks/person.webp", service.createPerson("Alice", null, " /api/artworks/person.webp ").photoUrl)
+    }
+
+    @Test
+    fun `legacy create and blank photo inputs produce no photo`() {
+        echoSavedPerson()
+        assertNull(service.createPerson("Alice", null).photoUrl)
+        assertNull(service.createPerson("Alice", null, "   ").photoUrl)
+    }
+
+    @Test
+    fun `legacy update preserves photo and explicit empty string removes it`() {
+        echoSavedPerson()
+        val person = PersonEntity(name = "Alice", photoUrl = "/api/artworks/old.png")
+        `when`(repository.findById(person.id)).thenReturn(Optional.of(person))
+        assertEquals("/api/artworks/old.png", service.updatePerson(person.id, "Updated", null)!!.photoUrl)
+        assertNull(service.updatePerson(person.id, "Updated", null, " ")!!.photoUrl)
+    }
+
+    @Test
+    fun `update replaces photo with normalized URL`() {
+        echoSavedPerson()
+        val person = PersonEntity(name = "Alice", photoUrl = "/api/artworks/old.png")
+        `when`(repository.findById(person.id)).thenReturn(Optional.of(person))
+        assertEquals("/api/artworks/new.webp", service.updatePerson(person.id, "Alice", null, " /api/artworks/new.webp ")!!.photoUrl)
+    }
+
+    @Test
+    fun `oversized photo URL is rejected before writes or entity changes`() {
+        assertThrows(IllegalArgumentException::class.java) { service.createPerson("Alice", null, "a".repeat(2049)) }
+        assertThrows(IllegalArgumentException::class.java) { service.updatePerson(UUID.randomUUID(), "Alice", null, "a".repeat(2049)) }
+        verifyNoInteractions(repository)
+    }
 }

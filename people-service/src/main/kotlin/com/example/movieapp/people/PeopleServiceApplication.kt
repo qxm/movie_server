@@ -12,19 +12,13 @@ import java.util.UUID
 class PeopleServiceApplication {
     @Bean
     fun initData(repository: PersonRepository) = CommandLineRunner {
-
-        repository.save(
-            PersonEntity(
-                id = UUID.fromString(
-                    "550e8400-e29b-41d4-a716-446655440000"
-                ),
-                name = "Christopher Nolan",
-                biography = "Film director and screenwriter"
-            )
-        )
+        val exampleId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+        // Seed only once so restarting cannot overwrite edited biographies or photos.
+        if (!repository.existsById(exampleId)) {
+            repository.save(PersonEntity(id = exampleId, name = "Christopher Nolan", biography = "Film director and screenwriter"))
+        }
     }
 }
-
 
 fun main(args: Array<String>) {
     runApplication<PeopleServiceApplication>(*args)

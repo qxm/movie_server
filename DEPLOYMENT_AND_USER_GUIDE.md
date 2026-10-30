@@ -160,7 +160,7 @@ query {
 }
 ```
 
-An empty movie list is valid on a fresh database. The people service inserts or updates the example person Christopher Nolan with a fixed ID when it starts.
+An empty movie list is valid on a fresh database. The people service inserts the example person Christopher Nolan with a fixed ID only if that record is missing; restarting preserves edited biographies and photos.
 
 ## 4. Build and Run Packaged Applications
 
@@ -370,7 +370,7 @@ Use **Ctrl+C** in each running terminal. Stop the frontend and gateway first, fo
 - This assessment deployment has no authentication or authorization and uses plaintext local gRPC connections. It is intended for a local demonstration rather than unrestricted public exposure.
 - The person deletion guard scans the existing movie list. It blocks normal deletion of referenced people and refuses deletion when verification fails, but the check and delete are not an atomic cross-service transaction. Concurrent credit creation and person deletion can still race.
 - Uploaded posters may remain unused if movie creation is abandoned or a poster is replaced. Automatic orphan-file cleanup is not implemented.
-- The startup seed can restore or overwrite the example Christopher Nolan record on restart.
+- The startup seed inserts the example Christopher Nolan record only when missing. Existing profile details and photos are preserved.
 - The isolated test suites do not establish full cross-process HTTP-to-GraphQL-to-gRPC end-to-end coverage. Browser component tests depend on a separately installed Playwright browser.
 
 ## 10. Submission Contents
@@ -392,4 +392,17 @@ Before switching existing data, stop uploads to the old movie-service. From the 
 
 If the old service used another working directory, pass its actual upload path (for example `.\uploads\artworks`). The script preserves originals and verifies copied file hashes. For a custom storage location, set `MEDIA_UPLOAD_DIR` to an absolute path. Keep the media-service upload directory persistent. The backend repository's `media-service/README.md` contains detailed setup instructions.
 
-This migration does not add person avatars, temporary uploads, or unused-image cleanup.
+The same media-service now stores person photos as well as movie posters. Temporary uploads and unused-image cleanup are not implemented.
+
+
+## Person photos
+
+The Add New Person modal and Edit profile page support optional JPEG, PNG and WebP photos up to 5 MB. Choose Upload photo or Change photo and wait for the upload to finish before saving. Photo files are stored by media-service; people-service stores only their URL. An upload failure keeps the previous photo. Remove photo clears the profile reference when the profile is saved. Cancel leaves the stored profile unchanged.
+
+Photos appear on person details, people search results and movie credit cards. Missing or unreadable photos fall back to initials. The frontend uses the existing `/api/artworks` image proxy and `MEDIA_SERVICE_URL`.
+
+Person has a nullable `photoUrl` GraphQL field and a nullable `photo_url` database column. With the current H2 `ddl-auto: update` configuration, people-service adds the column on startup and existing records have no photo. Regenerate/rebuild the shared Protobuf module and restart people-service and graphql-gateway before using the updated frontend. Rebuilding/restarting all backend modules together avoids mixing generated protocol versions.
+
+For API clients, omit or send null for UpdatePersonInput.photoUrl to preserve the current photo; send an empty string to remove it. Existing gRPC update requests omit the new optional photo_url field and preserve the photo. Creating a person without a photo remains valid. Startup seed data no longer overwrites an existing person's photo or biography.
+
+Replacing or removing a profile photo does not immediately delete the image file, since files may have other references. Future unused-image cleanup must consider both movie artworkUrl and person photoUrl values.
