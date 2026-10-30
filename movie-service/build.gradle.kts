@@ -24,7 +24,6 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-web")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -33,8 +32,6 @@ dependencies {
     implementation("io.grpc:grpc-protobuf:1.75.0")
     implementation("io.grpc:grpc-stub:1.75.0")
 
-    // Register a pure Java WebP reader with the existing ImageIO validation.
-    runtimeOnly("com.twelvemonkeys.imageio:imageio-webp:3.12.0")
     runtimeOnly("com.h2database:h2")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

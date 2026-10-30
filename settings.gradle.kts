@@ -33,6 +33,7 @@ rootProject.name = "MovieDemo"
 include(
     "graphql-gateway",
     "movie-service",
+    "media-service",
     "people-service",
     "proto"
 )

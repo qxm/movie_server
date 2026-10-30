@@ -14,10 +14,11 @@ Source repositories:
 | Frontend, development | `http://localhost:5173` | Browser UI and same-origin API proxies |
 | GraphQL gateway | `http://localhost:8080/graphql` | GraphQL queries and mutations |
 | GraphiQL | `http://localhost:8080/graphiql` | Interactive API explorer |
-| Movie service | HTTP `8081`; gRPC `9091` | Movies, credits, and poster files |
+| Movie service | gRPC `9091` | Movies and credits |
+| Media service | HTTP `8082` | Image upload, validation, and retrieval |
 | People service | gRPC `9092` | People and biographies |
 
-Browser requests to `/api/graphql` are forwarded by the frontend server to the gateway. Poster upload and retrieval requests under `/api/artworks` are forwarded to the movie service. The people service has no HTTP interface.
+Browser requests to `/api/graphql` are forwarded by the frontend server to the gateway. Poster upload and retrieval requests under `/api/artworks` are forwarded to media-service. The movie and people services have no HTTP interface.
 
 ## 2. Prerequisites
 
@@ -26,7 +27,7 @@ Browser requests to `/api/graphql` are forwarded by the frontend server to the g
 - Node.js 24 and npm. Node.js `24.13.0` was used during development.
 - Internet access for the first npm installation and Gradle dependency download.
 - A modern browser.
-- Free ports `5173`, `8080`, `8081`, `9091`, and `9092`.
+- Free ports `5173`, `8080`, `8082`, `9091`, and `9092`.
 
 No separate database server, global Gradle installation, or global Protobuf compiler is required. The repository includes the Gradle wrapper and Protobuf build configuration. The services use file-based H2 databases.
 
@@ -74,7 +75,7 @@ Gradle also generates the protocol classes when required by compilation. The exp
 
 ### 3.2 Start the backend services
 
-Use three separate terminals. Run each command from the backend root and leave the terminal open. Wait for each service to finish starting before proceeding to the next one.
+Use four separate terminals. Run each command from the backend root and leave the terminal open. Wait for each service to finish starting before proceeding to the next one.
 
 **Terminal 1 — People service**
 
@@ -97,11 +98,18 @@ cd C:\movie-assessment\movie_server
 .\gradlew.bat :graphql-gateway:bootRun
 ```
 
-The movie and people services can start independently, but all three services must be running for the complete application workflow. Movie creation checks person existence; person deletion checks movie associations.
+**Terminal 4 — Media service**
+
+```powershell
+cd C:\movie-assessment\movie_server
+.\gradlew.bat :media-service:bootRun
+```
+
+The four backend services must be running for the complete application workflow. Media-service can upload and serve images independently of the other services. Movie creation checks person existence; person deletion checks movie associations.
 
 ### 3.3 Prepare and start the frontend
 
-Open a fourth PowerShell terminal:
+Open a fifth PowerShell terminal:
 
 ```powershell
 cd C:\movie-assessment\movie_client
@@ -120,7 +128,7 @@ The supplied environment settings are:
 
 ```dotenv
 GRAPHQL_GATEWAY_URL=http://localhost:8080
-MOVIE_SERVICE_URL=http://localhost:8081
+MEDIA_SERVICE_URL=http://127.0.0.1:8082
 BODY_SIZE_LIMIT=6M
 ```
 
@@ -163,10 +171,10 @@ This section describes running the application without the development servers. 
 From the backend root:
 
 ```powershell
-.\gradlew.bat :people-service:bootJar :movie-service:bootJar :graphql-gateway:bootJar
+.\gradlew.bat :people-service:bootJar :movie-service:bootJar :graphql-gateway:bootJar :media-service:bootJar
 ```
 
-Run the executable Spring Boot JARs in three separate terminals. Use the module directories as working directories so database and upload paths remain predictable:
+Run the executable Spring Boot JARs in four separate terminals. Use the module directories as working directories so database and upload paths remain predictable:
 
 ```powershell
 # Terminal 1
@@ -185,6 +193,13 @@ java -jar .\build\libs\movie-service-0.0.1-SNAPSHOT.jar
 cd C:\movie-assessment\movie_server\graphql-gateway
 java -jar .\build\libs\graphql-gateway-0.0.1-SNAPSHOT.jar
 ```
+
+```powershell
+# Terminal 4
+cd C:\movie-assessment\movie_server\media-service
+java -jar .\build\libs\media-service-0.0.1-SNAPSHOT.jar
+```
+
 
 Use the executable JARs, not files ending in `-plain.jar`. If the project version changes, use the corresponding generated filenames.
 
@@ -216,12 +231,12 @@ Backend configuration is stored in each service's `src/main/resources/applicatio
 | Setting | Service | Default |
 | --- | --- | --- |
 | `server.port` | Gateway | `8080` |
-| `server.port` | Movie service | `8081` |
+| `server.port` | Media service | `8082` |
 | `grpc.server.port` | Movie / People | `9091` / `9092` |
 | `grpc.people.host`, `grpc.people.port` | Movie service and gateway | `localhost`, `9092` |
 | `grpc.movie.host`, `grpc.movie.port` | Gateway | `localhost`, `9091` |
 | `grpc.movie.host`, `grpc.movie.port` | People service | `127.0.0.1`, `9091` (code defaults) |
-| `app.artwork.upload-dir` | Movie service | `./uploads/artworks` |
+| `app.artwork.upload-dir` / `MEDIA_UPLOAD_DIR` | Media service | `./uploads/artworks` |
 | `spring.datasource.url` | Movie service | `jdbc:h2:file:./data/moviedb` |
 | `spring.datasource.url` | People service | `jdbc:h2:file:./data/peopledb` |
 
@@ -233,7 +248,7 @@ For a different host or port, update every caller of that service as well. Sprin
 java -jar .\build\libs\people-service-0.0.1-SNAPSHOT.jar --grpc.movie.host=127.0.0.1 --grpc.movie.port=9091
 ```
 
-WebP decoding uses the bundled TwelveMonkeys ImageIO dependency. No separate native WebP installation is required.
+WebP decoding in media-service uses the bundled TwelveMonkeys ImageIO dependency. No separate native WebP installation is required.
 
 ## 6. User Guide
 
@@ -271,7 +286,7 @@ Open **Search**, enter a movie title or person name, and submit the query. Use t
 Run from the backend root:
 
 ```powershell
-.\gradlew.bat :movie-service:unitTest :people-service:unitTest :graphql-gateway:unitTest
+.\gradlew.bat :movie-service:unitTest :people-service:unitTest :graphql-gateway:unitTest :media-service:unitTest
 ```
 
 These tests cover business validation, gRPC request/response and error handling, image upload validation, client deadlines, and controller behavior using mocked dependencies.
@@ -279,10 +294,10 @@ These tests cover business validation, gRPC request/response and error handling,
 ### Backend isolated integration tests
 
 ```powershell
-.\gradlew.bat :movie-service:integrationTest :people-service:integrationTest :graphql-gateway:integrationTest
+.\gradlew.bat :movie-service:integrationTest :people-service:integrationTest :graphql-gateway:integrationTest :media-service:integrationTest
 ```
 
-These tests use isolated in-memory H2 databases and the actual GraphQL schema with mocked downstream clients. They cover persistence, credit replacement, transaction rollback, search behavior, schema binding, and person deletion protection. No running backend services are required, and the existing application databases are not used.
+These tests use isolated in-memory H2 databases and the actual GraphQL schema with mocked downstream clients. They cover persistence, credit replacement, transaction rollback, search behavior, schema binding, and person deletion protection. Media-service integration tests start a standalone HTTP server on a random port and verify real multipart uploads. No pre-existing backend services are required, and the existing application databases and image directories are not used.
 
 Reports are generated at:
 
@@ -323,9 +338,9 @@ Create a person from **Add Movie** and confirm automatic selection. Add them as 
 | Symptom | Action |
 | --- | --- |
 | `/api/graphql` returns `502` or `ECONNREFUSED` | Confirm the gateway is running on `8080` and check `GRAPHQL_GATEWAY_URL`. Also verify both gRPC services are running. Restart the frontend after editing its environment file. |
-| Poster upload returns `502` | Confirm the movie service's HTTP endpoint is running on `8081` and check `MOVIE_SERVICE_URL`. |
+| Poster upload returns `502` | Confirm media-service is running on `8082` and check `MEDIA_SERVICE_URL`. |
 | Upload returns `413` | Confirm the file is at most 5 MB and set the production frontend's `BODY_SIZE_LIMIT=6M`. |
-| WebP upload is rejected by an older running instance | Restart the movie service with the current source/build so the ImageIO plugin is included. Refresh the frontend as well. |
+| WebP upload is rejected by an older running instance | Restart media-service with the current source/build so the ImageIO plugin is included. Refresh the frontend as well. |
 | Person deletion is blocked | Remove all of that person's movie credits first. If the message indicates an unavailable backend, restore the movie service. |
 | Address already in use | Stop the previous instance, or change the port and all dependent service URLs. Avoid duplicate IDE and terminal instances. |
 | H2 database is locked | Stop the other process using the same database file. Do not delete the database to resolve a process conflict. |
@@ -350,7 +365,7 @@ For an unexpected frontend `500`, inspect the frontend terminal output. For back
 
 ## 9. Shutdown and Current Limitations
 
-Use **Ctrl+C** in each running terminal. Stop the frontend and gateway first, followed by the movie and people services. Keep database files and artwork files for the next run.
+Use **Ctrl+C** in each running terminal. Stop the frontend and gateway first, followed by the media, movie and people services. Keep database files and artwork files for the next run.
 
 - This assessment deployment has no authentication or authorization and uses plaintext local gRPC connections. It is intended for a local demonstration rather than unrestricted public exposure.
 - The person deletion guard scans the existing movie list. It blocks normal deletion of referenced people and refuses deletion when verification fails, but the check and delete are not an atomic cross-service transaction. Concurrent credit creation and person deletion can still race.
@@ -363,3 +378,18 @@ Use **Ctrl+C** in each running terminal. Stop the frontend and gateway first, fo
 Include both source repositories, their dependency manifests and lockfiles, the Gradle wrapper, `.env.example`, tests, and this guide. Generated `node_modules`, build outputs, local caches, and IDE-specific files are not needed for a source submission. Include sample databases or uploaded images only if required for the assessment, and document their working-directory layout.
 
 AI assistance was used during development for selected implementation changes, tests, and documentation. The submitted source and its behavior remain the basis for evaluation.
+
+
+## Media service migration
+
+Images are now owned by media-service on HTTP 8082. Movie records still store `artworkUrl`, and same-origin `/api/artworks/<filename>` URLs are unchanged. The frontend uses `MEDIA_SERVICE_URL`; its former `MOVIE_SERVICE_URL` setting no longer routes image requests. Restart the frontend after editing its environment, and rebuild a production frontend after environment changes. Direct clients of the former movie-service HTTP endpoint on 8081 must switch to 8082.
+
+Before switching existing data, stop uploads to the old movie-service. From the backend root, copy images with:
+
+```powershell
+.\media-service\scripts\migrate-artworks.ps1 -SourceDirectory .\movie-service\uploads\artworks
+```
+
+If the old service used another working directory, pass its actual upload path (for example `.\uploads\artworks`). The script preserves originals and verifies copied file hashes. For a custom storage location, set `MEDIA_UPLOAD_DIR` to an absolute path. Keep the media-service upload directory persistent. The backend repository's `media-service/README.md` contains detailed setup instructions.
+
+This migration does not add person avatars, temporary uploads, or unused-image cleanup.

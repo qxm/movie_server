@@ -1,4 +1,4 @@
-package com.example.movieapp.movie.controller
+package com.example.movieapp.media.controller
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test

@@ -5,13 +5,13 @@
 Use JDK 21 from the repository root:
 
 ```powershell
-.\gradlew.bat :movie-service:unitTest :people-service:unitTest :graphql-gateway:unitTest
+.\gradlew.bat :movie-service:unitTest :people-service:unitTest :graphql-gateway:unitTest :media-service:unitTest
 ```
 
 Linux/macOS:
 
 ```sh
-./gradlew :movie-service:unitTest :people-service:unitTest :graphql-gateway:unitTest
+./gradlew :movie-service:unitTest :people-service:unitTest :graphql-gateway:unitTest :media-service:unitTest
 ```
 
 These tasks select classes ending in `Test`. They use the existing JUnit 5 and Mockito dependencies. No application services, database, gRPC server, or HTTP server need to be running. Artwork tests create real small images and use per-test temporary directories under each module's build directory; existing posters are not touched.
@@ -26,7 +26,7 @@ If the Kotlin daemon cannot write to its default cache, run with `-Pkotlin.compi
 - `PersonServiceTest`: trimmed names and biographies, null/empty biography, name limits, missing records, updates, deletes, sorted lists, blank searches, and the twenty-result search limit.
 - `MovieGrpcServiceTest`: request/response conversion including credits, malformed UUIDs, validation errors, missing movies, preservation of gRPC failures, unexpected errors, and response completion semantics.
 - `PeopleGrpcServiceTest`: nullable biography conversion, create/get/list/update/delete/search requests, invalid UUIDs, validation failures, missing people, and internal service errors.
-- `ArtworkControllerTest`: valid PNG/JPEG and lossy/lossless WebP content, WebP MIME type and truncated/fake WebP rejection, generated filenames, header/extension mismatch, empty/oversized/exact-limit/truncated images, unsupported formats, missing files, invalid filenames, and response headers/bytes.
+- `ArtworkControllerTest` (media-service): valid PNG/JPEG and lossy/lossless WebP content, WebP MIME type and truncated/fake WebP rejection, generated filenames, header/extension mismatch, empty/oversized/exact-limit/truncated images, unsupported formats, missing files, invalid filenames, and response headers/bytes.
 - `MovieGraphQLControllerTest`: delegation of queries/mutations, input forwarding, NOT_FOUND-to-null handling, service outages, and nullable credit-person resolution.
 
 HTML reports are generated under `<module>/build/reports/tests/unitTest/index.html`. Machine-readable JUnit XML is under `<module>/build/test-results/unitTest/`.
@@ -36,7 +36,7 @@ AI assistance was used to author these tests and the unitTest Gradle tasks. The 
 ## Isolated integration tests
 
 ```powershell
-.\gradlew.bat :movie-service:integrationTest :people-service:integrationTest :graphql-gateway:integrationTest
+.\gradlew.bat :movie-service:integrationTest :people-service:integrationTest :graphql-gateway:integrationTest :media-service:integrationTest
 ```
 
 These tasks select `*IntegrationTests` and use Spring test slices. Persistence tests use automatically configured, isolated in-memory H2 databases, not the application's file database. No HTTP or gRPC servers are started and no existing backend needs to be running. The GraphQL tests load the actual schema and resolvers but mock downstream gRPC clients.
@@ -62,3 +62,7 @@ This intentionally small guard scans the movie list. It is suitable for this ass
 ## Shared credit roles
 
 The proto module exposes com.example.movieapp.common.CreditRole to all backend services. Movie creation and update normalize and validate roles through CreditRole.from; string API/database values are derived from enum.name. CreditRoleTest covers every enum value, whitespace/case normalization, invalid values, and locale independence. Existing persistence and GraphQL tests verify the unchanged string contract.
+
+## Media service HTTP integration
+
+ArtworkController and its 21 tests and WebP fixtures moved from movie-service to media-service. ArtworkHttpIntegrationTests starts a full, independent media-service on a random HTTP port and temporary storage, without databases or gRPC services. It verifies PNG/WebP upload/download, file-part validation, invalid image content, the configured 5 MB multipart limit, and missing-image responses. Reports use the same unitTest/integrationTest paths as the other modules.
